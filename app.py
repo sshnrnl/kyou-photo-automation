@@ -469,11 +469,58 @@ def main():
         output_images = [f for f in OUTPUT_DIR.glob("*.*") if f.suffix.lower() in image_extensions]
 
         if output_images:
-            st.write(f"**{len(output_images)}** processed image(s)")
+            col_left, col_right = st.columns([3, 1])
+
+            with col_left:
+                st.write(f"**{len(output_images)}** processed image(s)")
+
+            with col_right:
+                # Open folder button
+                if st.button("📂 Open Output Folder", key="open_output_folder"):
+                    import os
+                    import subprocess
+                    import platform
+
+                    folder_path = str(OUTPUT_DIR.absolute())
+
+                    if platform.system() == "Windows":
+                        os.startfile(folder_path)
+                    elif platform.system() == "Darwin":  # macOS
+                        subprocess.Popen(["open", folder_path])
+                    else:  # Linux
+                        subprocess.Popen(["xdg-open", folder_path])
+
+            # Quick preview (first 8 images)
+            st.markdown("### Quick Preview")
             cols = st.columns(min(4, len(output_images)))
             for idx, img_file in enumerate(output_images[:8]):
                 with cols[idx % 4]:
                     st.image(str(img_file), caption=img_file.name, use_container_width=True)
+
+            # Show all images button
+            if len(output_images) > 8:
+                if st.button("📺 Show All Results", key="show_all_results"):
+                    st.session_state.show_all = True
+
+            # Show all results in one page
+            if st.session_state.get('show_all', False):
+                st.markdown("---")
+                st.markdown(f"### All {len(output_images)} Results")
+
+                # Grid layout for all images
+                cols_per_row = 4
+                for idx in range(0, len(output_images), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    for col_idx, col in enumerate(cols):
+                        if idx + col_idx < len(output_images):
+                            img_file = output_images[idx + col_idx]
+                            with col:
+                                st.image(str(img_file), caption=img_file.name, use_container_width=True)
+
+                if st.button("🔼 Hide All Results", key="hide_all_results"):
+                    st.session_state.show_all = False
+                    st.rerun()
+
         else:
             st.info("No processed images yet. Upload a reference and some images to get started!")
     else:
